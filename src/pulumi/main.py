@@ -19,8 +19,8 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_cli_path: dagger.Directory = None,
-        azure_oidc_token: dagger.Secret = None,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: dagger.Secret | None,
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
@@ -45,8 +45,8 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_cli_path: dagger.Directory = None,
-        azure_oidc_token: dagger.Secret = None,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: dagger.Secret | None,
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -71,8 +71,8 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_cli_path: dagger.Directory = None,
-        azure_oidc_token: dagger.Secret = None,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: dagger.Secret | None,
     ) -> dagger.Container:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -96,8 +96,8 @@ class Pulumi:
         infrastructure_path: dagger.Directory,
         stack_name: str,
         config_passphrase: dagger.Secret,
-        azure_cli_path: dagger.Directory = None,
-        azure_oidc_token: dagger.Secret = None,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: dagger.Secret | None,
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -120,8 +120,8 @@ class Pulumi:
         container_name: str,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
-        azure_cli_path: dagger.Directory = None,
-        azure_oidc_token: dagger.Secret = None,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: dagger.Secret | None, 
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = (
