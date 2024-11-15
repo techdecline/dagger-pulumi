@@ -28,7 +28,6 @@ class Pulumi:
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
-            stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
         )
