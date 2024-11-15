@@ -118,13 +118,12 @@ class Pulumi:
         blob_address = (
             f"azblob://{container_name}?storage_account={storage_account_name}"
         )
+        filtered_source = infrastructure_path.without_directory("venv")
         return (
             dag.container().from_("pulumi/pulumi:latest").with_directory("/root/.azure", azure_cli_path)
-            # dag.container().from_("pulumi/pulumi-python-3.12:latest").with_directory("/root/.azure", azure_cli_path) # Azure CLI Required
             .with_env_variable("AZURE_AUTH", "az")
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
-            .with_mounted_directory("/infra", infrastructure_path)
-            .without_directory("venv") # Exclude Virtual Environment from Container
+            .with_directory("/infra", filtered_source)
             .with_workdir("/infra")
             .with_exec(["pulumi", "login", blob_address])
         )
