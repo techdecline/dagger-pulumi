@@ -2,7 +2,7 @@
 name = "pulumi"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["dagger-io","pulumi"]
+dependencies = ["dagger-io"]
 
 [tool.uv.sources]
 dagger-io = { path = "sdk", editable = true }
