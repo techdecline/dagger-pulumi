@@ -92,7 +92,8 @@ class Pulumi:
             f"azblob://{container_name}?storage_account={storage_account_name}"
         )
         return (
-            dag.container().from_("pulumi/pulumi-python-3.12:latest").with_directory("/root/.azure", azure_cli_path)
+            dag.container().from_("pulumi/pulumi:latest").with_directory("/root/.azure", azure_cli_path)
+            # dag.container().from_("pulumi/pulumi-python-3.12:latest").with_directory("/root/.azure", azure_cli_path) # Azure CLI Required
             .with_env_variable("AZURE_AUTH", "az")
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
             .with_mounted_directory("/infra", infrastructure_path)
