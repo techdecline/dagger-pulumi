@@ -124,6 +124,7 @@ class Pulumi:
             .with_env_variable("AZURE_AUTH", "az")
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
             .with_mounted_directory("/infra", infrastructure_path)
+            .without_directory("venv") # Exclude Virtual Environment from Container
             .with_workdir("/infra")
             .with_exec(["pulumi", "login", blob_address])
         )
