@@ -57,9 +57,33 @@ class Pulumi:
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
             ctr.with_exec(["pulumi", "preview"]).stdout()
         )
-
+    
     @function
-    def up(
+    async def debug_env(
+        self,
+        storage_account_name: str,
+        container_name: str,
+        azure_cli_path: dagger.Directory,
+        config_passphrase: dagger.Secret,
+        infrastructure_path: dagger.Directory,
+        stack_name: str,
+    ) -> dagger.Container:
+        """Preview the changes to the infrastructure"""
+        ctr = await self.create_or_select_stack(
+            storage_account_name,
+            container_name,
+            azure_cli_path,
+            config_passphrase,
+            infrastructure_path,
+            stack_name,
+        )
+        return await (
+            # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
+            ctr.terminal()
+        )
+    
+    @function
+    async def up(
         self,
         storage_account_name: str,
         container_name: str,
@@ -68,8 +92,8 @@ class Pulumi:
         infrastructure_path: dagger.Directory,
         stack_name: str,
     ) -> str:
-        """Apply the changes to the infrastructure"""
-        ctr = self.pulumi_az_base(
+        """Preview the changes to the infrastructure"""
+        ctr = await self.create_or_select_stack(
             storage_account_name,
             container_name,
             azure_cli_path,
@@ -77,7 +101,10 @@ class Pulumi:
             infrastructure_path,
             stack_name,
         )
-        return ctr.with_exec(["pulumi", "up", "-f"]).stdout()
+        return await (
+            # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
+            ctr.with_exec(["pulumi", "up","-f"]).stdout()
+        )
 
     def pulumi_az_base(
         self,
