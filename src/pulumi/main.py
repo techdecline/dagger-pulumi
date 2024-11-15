@@ -16,18 +16,21 @@ class Pulumi:
         self,
         storage_account_name: str,
         container_name: str,
-        azure_cli_path: dagger.Directory,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
+        azure_cli_path: dagger.Directory = None,
+        azure_oidc_token: dagger.Secret = None,
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
-            storage_account_name,
-            container_name,
-            azure_cli_path,
-            config_passphrase,
-            infrastructure_path,
+            storage_account_name=storage_account_name,
+            container_name=container_name,
+            config_passphrase=config_passphrase,
+            infrastructure_path=infrastructure_path,
+            stack_name=stack_name,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
         )
         if not await self.test_stack(ctr, stack_name):
             return await ctr.with_exec(["pulumi", "stack", "init", stack_name])
@@ -39,19 +42,21 @@ class Pulumi:
         self,
         storage_account_name: str,
         container_name: str,
-        azure_cli_path: dagger.Directory,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
+        azure_cli_path: dagger.Directory = None,
+        azure_oidc_token: dagger.Secret = None,
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
-            storage_account_name,
-            container_name,
-            azure_cli_path,
-            config_passphrase,
-            infrastructure_path,
-            stack_name,
+            storage_account_name=storage_account_name,
+            container_name=container_name,
+            config_passphrase=config_passphrase,
+            infrastructure_path=infrastructure_path,
+            stack_name=stack_name,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
         )
         return await (
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
@@ -63,22 +68,23 @@ class Pulumi:
         self,
         storage_account_name: str,
         container_name: str,
-        azure_cli_path: dagger.Directory,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
+        azure_cli_path: dagger.Directory = None,
+        azure_oidc_token: dagger.Secret = None,
     ) -> dagger.Container:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
-            storage_account_name,
-            container_name,
-            azure_cli_path,
-            config_passphrase,
-            infrastructure_path,
-            stack_name,
+            storage_account_name=storage_account_name,
+            container_name=container_name,
+            config_passphrase=config_passphrase,
+            infrastructure_path=infrastructure_path,
+            stack_name=stack_name,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
         )
         return await (
-            # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
             ctr.terminal()
         )
     
@@ -87,19 +93,21 @@ class Pulumi:
         self,
         storage_account_name: str,
         container_name: str,
-        azure_cli_path: dagger.Directory,
-        config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
+        config_passphrase: dagger.Secret,
+        azure_cli_path: dagger.Directory = None,
+        azure_oidc_token: dagger.Secret = None,
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
-            storage_account_name,
-            container_name,
-            azure_cli_path,
-            config_passphrase,
-            infrastructure_path,
-            stack_name,
+            storage_account_name=storage_account_name,
+            container_name=container_name,
+            config_passphrase=config_passphrase,
+            infrastructure_path=infrastructure_path,
+            stack_name=stack_name,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
         )
         return await (
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
@@ -110,20 +118,30 @@ class Pulumi:
         self,
         storage_account_name: str,
         container_name: str,
-        azure_cli_path: dagger.Directory,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
+        azure_cli_path: dagger.Directory = None,
+        azure_oidc_token: dagger.Secret = None,
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = (
             f"azblob://{container_name}?storage_account={storage_account_name}"
         )
         filtered_source = infrastructure_path.without_directory("venv")
-        return (
-            dag.container().from_("pulumi/pulumi:latest").with_directory("/root/.azure", azure_cli_path)
-            .with_env_variable("AZURE_AUTH", "az")
-            .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
-            .with_directory("/infra", filtered_source)
-            .with_workdir("/infra")
+        ctr = dag.container().from_("pulumi/pulumi:latest")
+        
+        if azure_cli_path:
+            ctr = ctr.with_directory("/root/.azure", azure_cli_path)\
+                .with_env_variable("AZURE_AUTH", "az")
+        
+        if azure_oidc_token:
+            ctr = ctr.with_secret_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
+                .with_env_variable("ARM_USE_OIDC", "true")
+        
+        ctr = ctr \
+            .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
+            .with_directory("/infra", filtered_source) \
+            .with_workdir("/infra") \
             .with_exec(["pulumi", "login", blob_address])
-        )
+        
+        return ctr
