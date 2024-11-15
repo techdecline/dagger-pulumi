@@ -21,6 +21,8 @@ class Pulumi:
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
@@ -30,6 +32,8 @@ class Pulumi:
             infrastructure_path=infrastructure_path,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id
         )
         if not await self.test_stack(ctr, stack_name):
             return await ctr.with_exec(["pulumi", "stack", "init", stack_name])
@@ -46,6 +50,8 @@ class Pulumi:
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -56,6 +62,8 @@ class Pulumi:
             stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id
         )
         return await (
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
@@ -72,6 +80,8 @@ class Pulumi:
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
     ) -> dagger.Container:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -82,6 +92,8 @@ class Pulumi:
             stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id, 
         )
         return await (
             ctr.terminal()
@@ -97,6 +109,8 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
     ) -> str:
         """Preview the changes to the infrastructure"""
         ctr = await self.create_or_select_stack(
@@ -107,6 +121,8 @@ class Pulumi:
             stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id, 
         )
         return await (
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
@@ -120,7 +136,9 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         azure_cli_path: dagger.Directory | None,
-        azure_oidc_token: dagger.Secret | None, 
+        azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = (
@@ -135,7 +153,9 @@ class Pulumi:
         
         if azure_oidc_token:
             ctr = ctr.with_secret_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
-                .with_env_variable("ARM_USE_OIDC", "true")
+                .with_env_variable("ARM_USE_OIDC", "true") \
+                .with_env_variable("ARM_CLIENT_ID", azure_client_id) \
+                .with_env_variable("ARM_TENANT_ID", azure_tenant_id)
         
         ctr = ctr \
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
