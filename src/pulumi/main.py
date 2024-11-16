@@ -153,7 +153,9 @@ class Pulumi:
         
         if azure_oidc_token:
             ctr = ctr.with_secret_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
+                .with_secret_variable("AZURE_OIDC_TOKEN", azure_oidc_token) \
                 .with_env_variable("ARM_USE_OIDC", "true") \
+                .with_env_variable("AZURE_USE_OIDC", "true") \
                 .with_env_variable("ARM_CLIENT_ID", azure_client_id) \
                 .with_env_variable("AZURE_CLIENT_ID", azure_client_id) \
                 .with_env_variable("ARM_TENANT_ID", azure_tenant_id) \
