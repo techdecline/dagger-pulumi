@@ -152,14 +152,17 @@ class Pulumi:
                 .with_env_variable("AZURE_AUTH", "az")
         
         if azure_oidc_token:
-            ctr = ctr.with_secret_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
+            oidc_token_path = "/root/.azure/oidc_token"
+            ctr = ctr.with_new_file(oidc_token_path, azure_oidc_token) \
+                .with_secret_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
                 .with_secret_variable("AZURE_OIDC_TOKEN", azure_oidc_token) \
                 .with_env_variable("ARM_USE_OIDC", "true") \
                 .with_env_variable("AZURE_USE_OIDC", "true") \
                 .with_env_variable("ARM_CLIENT_ID", azure_client_id) \
                 .with_env_variable("AZURE_CLIENT_ID", azure_client_id) \
                 .with_env_variable("ARM_TENANT_ID", azure_tenant_id) \
-                .with_env_variable("AZURE_TENANT_ID", azure_tenant_id)
+                .with_env_variable("AZURE_TENANT_ID", azure_tenant_id) \
+                .with_env_variable("AZURE_FEDERATED_TOKEN_FILE ", oidc_token_path)
         
         ctr = ctr \
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
