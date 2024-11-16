@@ -163,7 +163,7 @@ class Pulumi:
                 .with_env_variable("AZURE_CLIENT_ID", azure_client_id) \
                 .with_env_variable("ARM_TENANT_ID", azure_tenant_id) \
                 .with_env_variable("AZURE_TENANT_ID", azure_tenant_id) \
-                .with_env_variable("OIDC_TOKEN_PATH", oidc_token_path)
+                .with_env_variable("AZURE_FEDERATED_TOKEN_FILE", oidc_token_path)
         
         ctr = ctr \
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
