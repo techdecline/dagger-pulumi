@@ -105,9 +105,13 @@ class Pulumi:
             azure_client_id=azure_client_id,
             azure_tenant_id=azure_tenant_id
         )
+        # return await (
+        #     ctr.with_env_variable("PULUMI_EXPERIMENTAL", "true") \
+        #     .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
+        #     .file("/infra/plan.json")            
+        # )
         return await (
-            ctr.with_env_variable("PULUMI_EXPERIMENTAL", "true") \
-            .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
+            ctr.with_exec(["/bin/sh", "-c", "`pulumi preview > plan.json`"]) \
             .file("/infra/plan.json")            
         )
     
