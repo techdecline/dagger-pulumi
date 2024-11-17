@@ -1,10 +1,15 @@
 import dagger
-from dagger import dag, function, object_type
+from typing import Annotated
+from dagger import dag, function, object_type, field, Doc
 import json
 
 
 @object_type
 class Pulumi:
+    """Pulumi Functions for Azure Configurations"""
+    
+    storage_account_name: Annotated[str, Doc("The name of the Azure Storage Account for state storage")] = field(default="")
+    
     async def test_stack(self, container: dagger.Container, stack_name: str) -> bool:
         """Query all existing stacks in the Pulumi state file"""
         stack_output = await container.with_exec(["pulumi", "stack", "ls", "--json"]).stdout()
@@ -14,7 +19,6 @@ class Pulumi:
     @function
     async def create_or_select_stack(
         self,
-        storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
@@ -26,7 +30,7 @@ class Pulumi:
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
-            storage_account_name=storage_account_name,
+            storage_account_name=self.storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
@@ -38,9 +42,7 @@ class Pulumi:
         if not await self.test_stack(ctr, stack_name):
             return await ctr.with_exec(["pulumi", "stack", "init", stack_name])
         else:
-            return await ctr.with_exec(["pulumi", "stack", "select", stack_name])
-
-    
+            return await ctr.with_exec(["pulumi", "stack", "select", stack_name])    
     
     @function
     async def preview(
@@ -56,8 +58,11 @@ class Pulumi:
         azure_tenant_id: str | None, 
     ) -> str:
         """Preview the changes to the infrastructure"""
+        
+        # Setup class attributes 
+        self.storage_account_name = storage_account_name
+        
         ctr = await self.create_or_select_stack(
-            storage_account_name=storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
@@ -171,7 +176,6 @@ class Pulumi:
         infrastructure_path: dagger.Directory,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
-        # azure_oidc_token: dagger.Secret | None,
         azure_client_id: str | None, 
         azure_tenant_id: str | None, 
     ) -> dagger.Container:
