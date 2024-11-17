@@ -17,7 +17,7 @@ class Azdo:
         organization_url: str,
         project: str,
         repository_id: str,
-        pr_id: int,
+        pr_id: str,
         comment: str
     ) -> str:
         """Comment on an Azure DevOps pull request"""
