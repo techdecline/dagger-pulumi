@@ -2,7 +2,7 @@
 name = "azdo"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["dagger-io"]
+dependencies = ["dagger-io","azure-devops","msrest"]
 
 [tool.uv.sources]
 dagger-io = { path = "sdk", editable = true }
