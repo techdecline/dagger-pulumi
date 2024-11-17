@@ -1,6 +1,8 @@
 import dagger
 import json
 from dagger import dag, function, object_type
+from azure.devops.connection import Connection
+from msrest.authentication import BasicAuthentication
 
 
 @object_type
@@ -21,23 +23,22 @@ class Azdo:
         comment: str
     ) -> str:
         """Comment on an Azure DevOps pull request"""
-        api_url = f"{organization_url}{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
-        payload = {
-            "comments": [
-                {
-                    "parentCommentId": 0,
-                    "content": comment,
-                    "commentType": 1
-                }
-            ],
-            "status": 1
-        }
-        ctr = dag.container().from_("curlimages/curl:latest")
-        response = await ctr \
-            .with_exec([
-                "curl", "-X", "POST", api_url,
-                "-H", "Content-Type: application/json",
-                "-H", f"Authorization: Basic {await azure_devops_pat.plaintext()}",
-                "-d", json.dumps(payload)
-            ]).stdout()
-        return response
+        credentials = BasicAuthentication('', await azure_devops_pat.plaintext())
+        connection = Connection(base_url=organization_url, creds=credentials)
+        git_client = connection.clients.get_git_client()
+
+        thread = git_client.create_thread(
+            comment_thread={
+                "comments": [
+                    {
+                        "content": comment,
+                        "commentType": 1
+                    }
+                ],
+                "status": 1
+            },
+            repository_id=repository_id,
+            pull_request_id=int(pr_id),
+            project=project
+        )
+        return json.dumps(thread.as_dict())
