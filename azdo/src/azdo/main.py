@@ -21,7 +21,7 @@ class Azdo:
         comment: str
     ) -> str:
         """Comment on an Azure DevOps pull request"""
-        api_url = f"{organization_url}/{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
+        api_url = f"{organization_url}{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
         payload = {
             "comments": [
                 {
