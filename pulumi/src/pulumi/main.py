@@ -91,8 +91,12 @@ class Pulumi:
         azure_tenant_id: str | None, 
     ) -> dagger.File:
         """Preview the changes to the infrastructure"""
+        
+        # Setup class attributes 
+        self.storage_account_name = storage_account_name
+        
+        
         ctr = await self.create_or_select_stack(
-            storage_account_name=storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
@@ -103,7 +107,6 @@ class Pulumi:
             azure_tenant_id=azure_tenant_id
         )
         return await (
-            # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
             ctr.with_env_variable("PULUMI_EXPERIMENTAL", "true") \
             .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
             .file("/infra/plan.json")            
@@ -123,8 +126,8 @@ class Pulumi:
         azure_tenant_id: str | None, 
     ) -> dagger.Container:
         """Preview the changes to the infrastructure"""
+        
         ctr = await self.create_or_select_stack(
-            storage_account_name=storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
@@ -151,9 +154,12 @@ class Pulumi:
         azure_client_id: str | None, 
         azure_tenant_id: str | None, 
     ) -> str:
-        """Preview the changes to the infrastructure"""
+        """Deploy the changes to the infrastructure"""
+        
+        # Setup class attributes 
+        self.storage_account_name = storage_account_name
+        
         ctr = await self.create_or_select_stack(
-            storage_account_name=storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
@@ -170,7 +176,6 @@ class Pulumi:
 
     def pulumi_az_base(
         self,
-        storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
@@ -181,7 +186,7 @@ class Pulumi:
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = (
-            f"azblob://{container_name}?storage_account={storage_account_name}"
+            f"azblob://{container_name}?storage_account={self.storage_account_name}"
         )
         filtered_source = infrastructure_path.without_directory("venv")
         ctr = dag.container().from_("pulumi/pulumi:latest")
