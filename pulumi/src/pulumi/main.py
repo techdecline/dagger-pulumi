@@ -30,7 +30,6 @@ class Pulumi:
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
-            storage_account_name=self.storage_account_name,
             container_name=container_name,
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
