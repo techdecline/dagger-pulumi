@@ -130,42 +130,6 @@ class Pulumi:
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
             ctr.with_exec(["pulumi", "up","-f"]).stdout()
         )
-    
-    # @function
-    # async def comment_on_pr(
-    #     self,
-    #     azure_devops_pat: dagger.Secret,
-    #     organization_url: str,
-    #     project: str,
-    #     repository_id: str,
-    #     pr_id: int,
-    #     comment: str
-    # ) -> str:
-    #     """Comment on an Azure DevOps pull request"""
-    #     api_url = f"{organization_url}/{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
-    #     headers = {
-    #         "Content-Type": "application/json",
-    #         "Authorization": f"Basic {azure_devops_pat}"
-    #     }
-    #     payload = {
-    #         "comments": [
-    #             {
-    #                 "parentCommentId": 0,
-    #                 "content": comment,
-    #                 "commentType": 1
-    #             }
-    #         ],
-    #         "status": 1
-    #     }
-    #     ctr = dag.container().from_("curlimages/curl:latest")
-    #     response = await ctr.with_env_variable("AZURE_DEVOPS_PAT", azure_devops_pat) \
-    #         .with_exec([
-    #             "curl", "-X", "POST", api_url,
-    #             "-H", "Content-Type: application/json",
-    #             "-H", f"Authorization: Basic {azure_devops_pat}",
-    #             "-d", json.dumps(payload)
-    #         ]).stdout()
-    #     return response
 
     def pulumi_az_base(
         self,
