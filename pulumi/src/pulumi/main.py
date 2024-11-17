@@ -99,7 +99,7 @@ class Pulumi:
         )
         return await (
             # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
-            ctr.with_env_varible("PULUMI_EXPERIMENTAL", "true") \
+            ctr.with_env_variable("PULUMI_EXPERIMENTAL", "true") \
             .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
             .file("/infra/plan.json")            
         )
