@@ -131,45 +131,82 @@ class Pulumi:
             ctr.with_exec(["pulumi", "up","-f"]).stdout()
         )
     
-    @function
-    async def comment_on_pr(
-        self,
-        azure_devops_pat: dagger.Secret,
-        organization: str,
-        project: str,
-        repository_id: str,
-        pr_id: int,
-        comment: str
-    ) -> str:
-        """Comment on an Azure DevOps pull request"""
-        api_url = f"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {azure_devops_pat}"
-        }
-        payload = {
-            "comments": [
-                {
-                    "parentCommentId": 0,
-                    "content": comment,
-                    "commentType": 1
-                }
-            ],
-            "status": 1
-        }
-        ctr = dag.container().from_("curlimages/curl:latest")
-        response = await ctr.with_env_variable("AZURE_DEVOPS_PAT", azure_devops_pat) \
-            .with_exec([
-                "curl", "-X", "POST", api_url,
-                "-H", "Content-Type: application/json",
-                "-H", f"Authorization: Basic {azure_devops_pat}",
-                "-d", json.dumps(payload)
-            ]).stdout()
-        return response
+    # @function
+    # async def comment_on_pr(
+    #     self,
+    #     azure_devops_pat: dagger.Secret,
+    #     organization_url: str,
+    #     project: str,
+    #     repository_id: str,
+    #     pr_id: int,
+    #     comment: str
+    # ) -> str:
+    #     """Comment on an Azure DevOps pull request"""
+    #     api_url = f"{organization_url}/{project}/_apis/git/repositories/{repository_id}/pullRequests/{pr_id}/threads?api-version=6.0"
+    #     headers = {
+    #         "Content-Type": "application/json",
+    #         "Authorization": f"Basic {azure_devops_pat}"
+    #     }
+    #     payload = {
+    #         "comments": [
+    #             {
+    #                 "parentCommentId": 0,
+    #                 "content": comment,
+    #                 "commentType": 1
+    #             }
+    #         ],
+    #         "status": 1
+    #     }
+    #     ctr = dag.container().from_("curlimages/curl:latest")
+    #     response = await ctr.with_env_variable("AZURE_DEVOPS_PAT", azure_devops_pat) \
+    #         .with_exec([
+    #             "curl", "-X", "POST", api_url,
+    #             "-H", "Content-Type: application/json",
+    #             "-H", f"Authorization: Basic {azure_devops_pat}",
+    #             "-d", json.dumps(payload)
+    #         ]).stdout()
+    #     return response
 
     def pulumi_az_base(
         self,
         storage_account_name: str,
         container_name: str,
+        config_passphrase: dagger.Secret,
+        infrastructure_path: dagger.Directory,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: str | None,
+        # azure_oidc_token: dagger.Secret | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
+    ) -> dagger.Container:
+        """Returns Pulumi container with Azure Authentication"""
+        blob_address = (
+            f"azblob://{container_name}?storage_account={storage_account_name}"
+        )
+        filtered_source = infrastructure_path.without_directory("venv")
+        ctr = dag.container().from_("pulumi/pulumi:latest")
+        
+        if azure_cli_path:
+            ctr = ctr.with_directory("/root/.azure", azure_cli_path)\
+                .with_env_variable("AZURE_AUTH", "az")
+        
+        if azure_oidc_token:
+            oidc_token_path = "/root/.azure/oidc_token"
+            ctr = ctr.with_new_file(oidc_token_path, azure_oidc_token) \
+                .with_env_variable("ARM_OIDC_TOKEN", azure_oidc_token) \
+                .with_env_variable("AZURE_OIDC_TOKEN", azure_oidc_token) \
+                .with_env_variable("ARM_USE_OIDC", "true") \
+                .with_env_variable("AZURE_USE_OIDC", "true") \
+                .with_env_variable("ARM_CLIENT_ID", azure_client_id) \
+                .with_env_variable("AZURE_CLIENT_ID", azure_client_id) \
+                .with_env_variable("ARM_TENANT_ID", azure_tenant_id) \
+                .with_env_variable("AZURE_TENANT_ID", azure_tenant_id) \
+                .with_env_variable("AZURE_FEDERATED_TOKEN_FILE", oidc_token_path)
+        
+        ctr = ctr \
+            .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
+            .with_directory("/infra", filtered_source) \
+            .with_workdir("/infra") \
+            .with_exec(["pulumi", "login", blob_address])
         
         return ctr
