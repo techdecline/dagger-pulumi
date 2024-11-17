@@ -73,6 +73,38 @@ class Pulumi:
         )
     
     @function
+    async def preview_file(
+        self,
+        storage_account_name: str,
+        container_name: str,
+        config_passphrase: dagger.Secret,
+        infrastructure_path: dagger.Directory,
+        stack_name: str,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: str | None,
+        azure_client_id: str | None, 
+        azure_tenant_id: str | None, 
+    ) -> dagger.File:
+        """Preview the changes to the infrastructure"""
+        ctr = await self.create_or_select_stack(
+            storage_account_name=storage_account_name,
+            container_name=container_name,
+            config_passphrase=config_passphrase,
+            infrastructure_path=infrastructure_path,
+            stack_name=stack_name,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id
+        )
+        return await (
+            # ctr.with_exec(["pip", "install", "-r", "requirements.txt"])
+            ctr.with_env_varible("PULUMI_EXPERIMENTAL", "true") \
+            .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
+            .file("/infra/plan.json")            
+        )
+    
+    @function
     async def debug_env(
         self,
         storage_account_name: str,
