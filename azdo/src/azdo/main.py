@@ -37,7 +37,7 @@ class Azdo:
             .with_exec([
                 "curl", "-X", "POST", api_url,
                 "-H", "Content-Type: application/json",
-                "-H", f"Authorization: Basic {azure_devops_pat.plaintext()}",
+                "-H", f"Authorization: Basic {await azure_devops_pat.plaintext()}",
                 "-d", json.dumps(payload)
             ]).stdout()
         return response
