@@ -33,7 +33,7 @@ class Azdo:
             "status": 1
         }
         ctr = dag.container().from_("curlimages/curl:latest")
-        response = await ctr.with_env_variable("AZURE_DEVOPS_PAT", azure_devops_pat) \
+        response = await ctr.with_secret_variable("AZURE_DEVOPS_PAT", azure_devops_pat) \
             .with_exec([
                 "curl", "-X", "POST", api_url,
                 "-H", "Content-Type: application/json",
