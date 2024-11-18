@@ -9,7 +9,6 @@ class Pulumi:
     """Pulumi Functions for Azure Configurations"""
     
     storage_account_name: Annotated[str, Doc("The name of the Azure Storage Account for state storage")] = field(default="")
-    azure_subscription_id: Annotated[str, Doc("Azure subscription ID for Deployment")] = field(default="")
     
     async def test_stack(self, container: dagger.Container, stack_name: str) -> bool:
         """Query all existing stacks in the Pulumi state file"""
@@ -52,7 +51,6 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_subscription_id: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
         azure_client_id: str | None, 
@@ -62,7 +60,6 @@ class Pulumi:
         
         # Setup class attributes 
         self.storage_account_name = storage_account_name
-        self.azure_subscription_id = azure_subscription_id
         
         ctr = await self.create_or_select_stack(
             container_name=container_name,
@@ -87,7 +84,6 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_subscription_id: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
         azure_client_id: str | None, 
@@ -97,7 +93,6 @@ class Pulumi:
         
         # Setup class attributes 
         self.storage_account_name = storage_account_name
-        self.azure_subscription_id = azure_subscription_id
         
         ctr = await self.create_or_select_stack(
             container_name=container_name,
@@ -152,7 +147,6 @@ class Pulumi:
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
-        azure_subscription_id: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
         azure_client_id: str | None, 
@@ -162,7 +156,6 @@ class Pulumi:
         
         # Setup class attributes 
         self.storage_account_name = storage_account_name
-        self.azure_subscription_id = azure_subscription_idneuer
         
         ctr = await self.create_or_select_stack(
             container_name=container_name,
@@ -214,8 +207,6 @@ class Pulumi:
                 .with_env_variable("AZURE_FEDERATED_TOKEN_FILE", oidc_token_path)
         
         ctr = ctr \
-            .with_env_variable("ARM_SUBSCRIPTION_ID", self.azure_subscription_id) \
-            .with_env_variable("AZURE_SUBSCRIPTION_ID", self.azure_subscription_id) \
             .with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase) \
             .with_directory("/infra", filtered_source) \
             .with_workdir("/infra") \
