@@ -93,21 +93,20 @@ class Pulumi:
         
         # Setup class attributes 
         self.storage_account_name = storage_account_name
-        
+        self.container_name = container_name
+        self.config_passphrase = config_passphrase
+        self.infrastructure_path = infrastructure_path
+        self.stack_name = stack_name
         
         ctr = await self.create_or_select_stack(
-            container_name=container_name,
-            config_passphrase=config_passphrase,
-            infrastructure_path=infrastructure_path,
-            stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
             azure_client_id=azure_client_id,
             azure_tenant_id=azure_tenant_id
         )
+        
         return await (
-            ctr.with_env_variable("PULUMI_EXPERIMENTAL", "true") \
-            .with_exec(["pulumi", "preview","--save-plan","plan.json"]) \
+            ctr.with_exec(["/bin/sh", "-c", "`pulumi preview > plan.json`"]) \
             .file("/infra/plan.json")            
         )
     
