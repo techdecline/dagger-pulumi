@@ -13,7 +13,7 @@ class Pulumi:
     config_passphrase: Annotated[dagger.Secret, Doc("The passphrase for the Pulumi configuration")] = field(default=dagger.Secret("pulumi"))
     infrastructure_path: Annotated[dagger.Directory, Doc("The path to the Pulumi infrastructure code")] = field(default=dagger.Directory("/infra")) 
     stack_name: Annotated[str, Doc("The name of the Pulumi stack to use")] = field(default="dev")
-    config_passphrase: Annotated[dagger.Secret, Doc("The passphrase for the Pulumi configuration")] = field()
+    config_passphrase: Annotated[dagger.Secret, Doc("The passphrase for the Pulumi configuration")] = field(default=dagger.Secret())
     ctr: dagger.Container = dag.container().from_("pulumi/pulumi:latest")
     
     async def test_stack(self) -> bool:
