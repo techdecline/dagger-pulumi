@@ -88,7 +88,7 @@ class Pulumi:
         azure_oidc_token: str | None,
         azure_client_id: str | None, 
         azure_tenant_id: str | None, 
-    ) -> str:
+    ) -> dagger.File:
         """Preview the changes to the infrastructure"""
         
         # Setup class attributes 
