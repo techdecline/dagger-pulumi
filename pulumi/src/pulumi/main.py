@@ -104,8 +104,7 @@ class Pulumi:
                 azure_client_id=azure_client_id,
                 azure_tenant_id=azure_tenant_id,
             )
-            await ctr.with_exec(["pulumi", "preview", "--json", "--out", "plan.json"])
-            return await ctr.file("/infra/plan.json")
+            return await ctr.with_exec(["pulumi", "preview", "--non-interactive", "-v=4", "-e", "--logflow", "--color=always", "--logtostderr"]).file("/infra/plan.json")
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
 
