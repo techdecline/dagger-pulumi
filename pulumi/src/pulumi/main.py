@@ -40,10 +40,11 @@ class Pulumi:
             azure_tenant_id=azure_tenant_id,
         )
         if not await self.test_stack(ctr, stack_name):
-            result = await ctr.with_exec(["pulumi", "stack", "init", stack_name]).stdout()
+            print(f"Initializing stack: {stack_name}")
+            return await ctr.with_exec(["pulumi", "stack", "init", stack_name]).stdout()
         else:
-            result = await ctr.with_exec(["pulumi", "stack", "select", stack_name]).stdout()
-        return ctr
+            print(f"Initializing stack: {stack_name}")
+            return await ctr.with_exec(["pulumi", "stack", "select", stack_name]).stdout()
 
     @function
     async def preview(
@@ -104,7 +105,7 @@ class Pulumi:
                 azure_client_id=azure_client_id,
                 azure_tenant_id=azure_tenant_id,
             )
-            return await ctr.with_exec(["pulumi", "preview", "--non-interactive", "-v=4", "-e", "--logflow", "--color=always", "--logtostderr"]).file("/infra/plan.json")
+            return await ctr.with_exec(["pulumi", "preview", "--non-interactive", "-v=9", "-e", "--logflow", "--color=always", "--logtostderr"]).file("/infra/plan.json")
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
 
