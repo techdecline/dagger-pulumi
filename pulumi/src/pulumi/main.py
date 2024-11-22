@@ -41,10 +41,10 @@ class Pulumi:
         )
         if not await self.test_stack(ctr, stack_name):
             print(f"Initializing stack: {stack_name}")
-            return await ctr.with_exec(["pulumi", "stack", "init", stack_name]).stdout()
+            return await ctr.with_exec(["pulumi", "stack", "init", stack_name])
         else:
             print(f"Initializing stack: {stack_name}")
-            return await ctr.with_exec(["pulumi", "stack", "select", stack_name]).stdout()
+            return await ctr.with_exec(["pulumi", "stack", "select", stack_name])
 
     @function
     async def preview(
