@@ -125,19 +125,18 @@ class Pulumi:
         self.container_name = container_name
         self.stack_name = stack_name
 
-        ctr = await self.create_or_select_stack(
-            config_passphrase=config_passphrase,
-            infrastructure_path=infrastructure_path,
-            azure_cli_path=azure_cli_path,
-            azure_oidc_token=azure_oidc_token,
-            azure_client_id=azure_client_id,
-            azure_tenant_id=azure_tenant_id,
-        )
-        
-        return await (
-            ctr.with_exec(["/bin/sh", "-c", "`pulumi preview > plan.json`"]) \
-            .file("/infra/plan.json")            
-        )
+        try:
+            ctr = await self.create_or_select_stack(
+                config_passphrase=config_passphrase,
+                infrastructure_path=infrastructure_path,
+                azure_cli_path=azure_cli_path,
+                azure_oidc_token=azure_oidc_token,
+                azure_client_id=azure_client_id,
+                azure_tenant_id=azure_tenant_id,
+            )
+            return await ctr.with_exec(["pulumi", "preview", "--non-interactive", "-e", "--color=always", "--save-plan=/infra/plan.json"]).file("/infra/plan.json")
+        except Exception as e:
+            raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
 
     @function
     async def up(
