@@ -218,7 +218,7 @@ class Pulumi:
             ctr.with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
             .with_directory("/infra", filtered_source)
             .with_workdir("/infra")
-            .with_exec("pip", "install", "-r", "requirements.txt")
+            .with_exec(["pip", "install", "-r", "requirements.txt"])
             .with_exec(["pulumi", "login", blob_address])
         )
 
