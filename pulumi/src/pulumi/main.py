@@ -11,19 +11,19 @@ class Pulumi:
 
     storage_account_name: Annotated[str, Doc("The name of the Azure Storage Account for state storage")] = field(default="")
     container_name: Annotated[str, Doc("The name of the Azure Storage Container for state storage")] = field(default="")
+    stack_name: Annotated[str, Doc("The name of the Pulumi stack")] = field(default="")
 
-    async def test_stack(self, container: dagger.Container, stack_name: str) -> bool:
+    async def test_stack(self, container: dagger.Container) -> bool:
         """Query all existing stacks in the Pulumi state file"""
         result = await container.with_exec(["pulumi", "stack", "ls", "--json"]).stdout()
         stacks = json.loads(result)
-        return any(stack.get("name") == stack_name for stack in stacks)
+        return any(stack.get("name") == self.stack_name for stack in stacks)
 
     @function
     async def create_or_select_stack(
         self,
         config_passphrase: dagger.Secret,
         infrastructure_path: dagger.Directory,
-        stack_name: str,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
         azure_client_id: str | None,
@@ -38,12 +38,12 @@ class Pulumi:
             azure_client_id=azure_client_id,
             azure_tenant_id=azure_tenant_id,
         )
-        if not await self.test_stack(ctr, stack_name):
-            print(f"Initializing stack: {stack_name}")
-            return await ctr.with_exec(["pulumi", "stack", "init", stack_name])
+        if not await self.test_stack(ctr):
+            print(f"Initializing stack: {self.stack_name}")
+            return await ctr.with_exec(["pulumi", "stack", "init", self.stack_name])
         else:
-            print(f"Initializing stack: {stack_name}")
-            return await ctr.with_exec(["pulumi", "stack", "select", stack_name])
+            print(f"Initializing stack: {self.stack_name}")
+            return await ctr.with_exec(["pulumi", "stack", "select", self.stack_name])
 
     @function
     async def preview(
@@ -61,12 +61,12 @@ class Pulumi:
         """Preview the changes to the infrastructure"""
         self.storage_account_name = storage_account_name
         self.container_name = container_name
+        self.stack_name = stack_name
 
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
                 infrastructure_path=infrastructure_path,
-                stack_name=stack_name,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
                 azure_client_id=azure_client_id,
@@ -93,11 +93,11 @@ class Pulumi:
         """Preview the changes to the infrastructure"""
         self.storage_account_name = storage_account_name
         self.container_name = container_name
+        self.stack_name = stack_name
         
         ctr = await self.create_or_select_stack(
             config_passphrase=config_passphrase,
             infrastructure_path=infrastructure_path,
-            stack_name=stack_name,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
             azure_client_id=azure_client_id,
@@ -123,12 +123,12 @@ class Pulumi:
         """Preview the changes to the infrastructure and output to a file"""
         self.storage_account_name = storage_account_name
         self.container_name = container_name
+        self.stack_name = stack_name
 
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
                 infrastructure_path=infrastructure_path,
-                stack_name=stack_name,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
                 azure_client_id=azure_client_id,
@@ -154,12 +154,12 @@ class Pulumi:
         """Apply the changes to the infrastructure"""
         self.storage_account_name = storage_account_name
         self.container_name = container_name
+        self.stack_name = stack_name
 
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
                 infrastructure_path=infrastructure_path,
-                stack_name=stack_name,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
                 azure_client_id=azure_client_id,
