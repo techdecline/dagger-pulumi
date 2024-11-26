@@ -136,14 +136,7 @@ class Pulumi:
                 azure_tenant_id=azure_tenant_id,
             )
             return await ctr.with_exec(
-                [
-                    "pulumi",
-                    "preview",
-                    "--non-interactive",
-                    "-e",
-                    "--color=always",
-                    "--save-plan=/infra/plan.json",
-                ]
+                ["/bin/sh", "-c", "`pulumi preview > plan.json`"]
             ).file("/infra/plan.json")
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
