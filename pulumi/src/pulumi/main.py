@@ -15,7 +15,10 @@ class Pulumi:
         str, Doc("The name of the Azure Storage Container for state storage")
     ] = field(default="")
     stack_name: Annotated[str, Doc("The name of the Pulumi stack")] = field(default="")
-    cache_dir: Annotated[str, Doc("The directory for caching Python Dependencies")] = field(default="~/.cache/pip")
+    cache_dir: Annotated[str, Doc("The directory for caching Python Dependencies within the container")] = (
+        field(default="/root/.cache/pip")
+    )
+    pulumi_image: Annotated[str, Doc("The Pulumi Docker image to use")] = field(default="pulumi/pulumi:latest")
 
     async def test_stack(self, container: dagger.Container) -> bool:
         """Query all existing stacks in the Pulumi state file"""
@@ -174,6 +177,20 @@ class Pulumi:
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi up: {e}")
 
+    @function 
+    def build_container(self,
+        infrastructure_path: dagger.Directory,
+    ) -> dagger.Container:
+        """Build the Pulumi container"""
+        filtered_source = infrastructure_path.without_directory("venv")
+        return (
+            dag.container().from_(self.pulumi_image)
+            .with_directory("/infra", filtered_source)
+                .with_workdir("/infra")
+                .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
+                .with_exec(["pip", "install", "-r", "requirements.txt"])
+        )
+
     def pulumi_az_base(
         self,
         config_passphrase: dagger.Secret,
@@ -185,12 +202,11 @@ class Pulumi:
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = f"azblob://{self.container_name}?storage_account={self.storage_account_name}"
-        filtered_source = infrastructure_path.without_directory("venv")
-        ctr = dag.container().from_("pulumi/pulumi:latest")
-
+        ctr = self.build_container(infrastructure_path)
         if azure_cli_path:
-            ctr = ctr.with_directory("/root/.azure", azure_cli_path).with_env_variable(
-                "AZURE_AUTH", "az"
+            ctr = (
+                ctr.with_directory("/root/.azure", azure_cli_path)
+                .with_env_variable("AZURE_AUTH", "az")   
             )
 
         if azure_oidc_token:
@@ -208,13 +224,8 @@ class Pulumi:
                 .with_env_variable("AZURE_FEDERATED_TOKEN_FILE", oidc_token_path)
             )
 
-        ctr = (
-            ctr.with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
-            .with_directory("/infra", filtered_source)
-            .with_workdir("/infra")
-            .with_mounted_cache(self.cache_dir, dag.cache_volume("python-312"))
-            .with_exec(["pip", "install", "-r", "requirements.txt"])
-            .with_exec(["pulumi", "login", blob_address])
-        )
+        ctr = ctr.with_secret_variable(
+            "PULUMI_CONFIG_PASSPHRASE", config_passphrase
+        ).with_exec(["pulumi", "login", blob_address])
 
         return ctr
