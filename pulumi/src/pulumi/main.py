@@ -15,6 +15,7 @@ class Pulumi:
         str, Doc("The name of the Azure Storage Container for state storage")
     ] = field(default="")
     stack_name: Annotated[str, Doc("The name of the Pulumi stack")] = field(default="")
+    cache_dir: Annotated[str, Doc("The directory for caching Python Dependencies")] = field(default="~/.cache/pip")
 
     async def test_stack(self, container: dagger.Container) -> bool:
         """Query all existing stacks in the Pulumi state file"""
@@ -211,6 +212,7 @@ class Pulumi:
             ctr.with_secret_variable("PULUMI_CONFIG_PASSPHRASE", config_passphrase)
             .with_directory("/infra", filtered_source)
             .with_workdir("/infra")
+            .with_mounted_cache("/root/.cache/pip", dag.cache_volume("python-312"))
             .with_exec(["pip", "install", "-r", "requirements.txt"])
             .with_exec(["pulumi", "login", blob_address])
         )
