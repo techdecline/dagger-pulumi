@@ -186,9 +186,9 @@ class Pulumi:
         return (
             dag.container().from_(self.pulumi_image)
             .with_directory("/infra", filtered_source)
-                .with_workdir("/infra")
-                .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
-                .with_exec(["pip", "install", "-r", "requirements.txt"])
+            .with_workdir("/infra")
+            .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
+            .with_exec(["pip", "install", "-r", "requirements.txt"])
         )
 
     def pulumi_az_base(
