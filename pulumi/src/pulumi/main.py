@@ -16,7 +16,7 @@ class Pulumi:
     ] = field(default="")
     stack_name: Annotated[str, Doc("The name of the Pulumi stack")] = field(default="")
     cache_dir: Annotated[str, Doc("The directory for caching Python Dependencies within the container")] = (
-        field(default="/root/.cache/pip")
+        field(default="/root/.cache/uv")
     )
     pulumi_image: Annotated[str, Doc("The Pulumi Docker image to use")] = field(default="pulumi/pulumi:latest")
 
@@ -187,8 +187,9 @@ class Pulumi:
             dag.container().from_(self.pulumi_image)
             .with_directory("/infra", filtered_source)
             .with_workdir("/infra")
+            .with_exec(["pip", "install", "uv"])
             .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
-            .with_exec(["pip", "install", "-r", "requirements.txt"])
+            .with_exec(["pulumi", "install"])
         )
 
     def pulumi_az_base(
