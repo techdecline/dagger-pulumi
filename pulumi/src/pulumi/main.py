@@ -140,7 +140,7 @@ class Pulumi:
                 azure_tenant_id=azure_tenant_id,
             )
             return await ctr.with_exec(
-                ["/bin/sh", "-c", "pulumi preview > plan.json 2>&1"]
+                ["/bin/sh", "-c", "pulumi preview > plan.json"]
             ).file("/infra/plan.json")
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
