@@ -79,7 +79,7 @@ class Pulumi:
                 azure_client_id=azure_client_id,
                 azure_tenant_id=azure_tenant_id,
             )
-            result = await ctr.with_exec(["pulumi", "preview"]).stdout()
+            result = await ctr.with_exec(["pulumi", "preview", "--diff"]).stdout()
             return result
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi preview: {e}")
