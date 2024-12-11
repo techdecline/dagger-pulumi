@@ -30,6 +30,7 @@ class Pulumi:
     async def create_or_select_stack(
         self,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
@@ -39,6 +40,7 @@ class Pulumi:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
             config_passphrase=config_passphrase,
+            github_token=github_token,
             infrastructure_path=infrastructure_path,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
@@ -58,6 +60,7 @@ class Pulumi:
         storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
@@ -73,6 +76,7 @@ class Pulumi:
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
+                github_token=github_token,
                 infrastructure_path=infrastructure_path,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
@@ -90,6 +94,7 @@ class Pulumi:
         storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
@@ -104,6 +109,7 @@ class Pulumi:
 
         ctr = await self.create_or_select_stack(
             config_passphrase=config_passphrase,
+            github_token=github_token,
             infrastructure_path=infrastructure_path,
             azure_cli_path=azure_cli_path,
             azure_oidc_token=azure_oidc_token,
@@ -118,6 +124,7 @@ class Pulumi:
         storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
@@ -133,6 +140,7 @@ class Pulumi:
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
+                github_token=github_token,
                 infrastructure_path=infrastructure_path,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
@@ -151,6 +159,7 @@ class Pulumi:
         storage_account_name: str,
         container_name: str,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         stack_name: str,
         azure_cli_path: dagger.Directory | None,
@@ -166,6 +175,7 @@ class Pulumi:
         try:
             ctr = await self.create_or_select_stack(
                 config_passphrase=config_passphrase,
+                github_token=github_token,
                 infrastructure_path=infrastructure_path,
                 azure_cli_path=azure_cli_path,
                 azure_oidc_token=azure_oidc_token,
@@ -180,6 +190,7 @@ class Pulumi:
     @function 
     def build_container(self,
         infrastructure_path: dagger.Directory,
+        github_token: dagger.Secret,
     ) -> dagger.Container:
         """Build the Pulumi container"""
         filtered_source = infrastructure_path.without_directory("venv")
@@ -189,12 +200,14 @@ class Pulumi:
             .with_workdir("/infra")
             .with_exec(["pip", "install", "uv"])
             .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
+            .with_secret_variable("GITHUB_TOKEN", github_token)
             .with_exec(["pulumi", "install"])
         )
 
     def pulumi_az_base(
         self,
         config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
         infrastructure_path: dagger.Directory,
         azure_cli_path: dagger.Directory | None,
         azure_oidc_token: str | None,
@@ -203,7 +216,7 @@ class Pulumi:
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = f"azblob://{self.container_name}?storage_account={self.storage_account_name}"
-        ctr = self.build_container(infrastructure_path)
+        ctr = self.build_container(infrastructure_path, github_token)
         if azure_cli_path:
             ctr = (
                 ctr.with_directory("/root/.azure", azure_cli_path)
