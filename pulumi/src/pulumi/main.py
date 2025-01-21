@@ -1,7 +1,8 @@
-import dagger
-from typing import Annotated
-from dagger import dag, function, object_type, field, Doc
 import json
+from typing import Optional, Annotated
+
+import dagger
+from dagger import Doc, dag, field, function, object_type
 
 
 @object_type
@@ -15,10 +16,12 @@ class Pulumi:
         str, Doc("The name of the Azure Storage Container for state storage")
     ] = field(default="")
     stack_name: Annotated[str, Doc("The name of the Pulumi stack")] = field(default="")
-    cache_dir: Annotated[str, Doc("The directory for caching Python Dependencies within the container")] = (
-        field(default="/root/.cache/uv")
+    cache_dir: Annotated[
+        str, Doc("The directory for caching Python Dependencies within the container")
+    ] = field(default="/root/.cache/uv")
+    pulumi_image: Annotated[str, Doc("The Pulumi Docker image to use")] = field(
+        default="pulumi/pulumi:latest"
     )
-    pulumi_image: Annotated[str, Doc("The Pulumi Docker image to use")] = field(default="pulumi/pulumi:latest")
 
     async def test_stack(self, container: dagger.Container) -> bool:
         """Query all existing stacks in the Pulumi state file"""
@@ -36,6 +39,7 @@ class Pulumi:
         azure_oidc_token: str | None,
         azure_client_id: str | None,
         azure_tenant_id: str | None,
+        install_project: bool = True,
     ) -> dagger.Container:
         """Create or select a stack in the Pulumi state file"""
         ctr = self.pulumi_az_base(
@@ -46,7 +50,11 @@ class Pulumi:
             azure_oidc_token=azure_oidc_token,
             azure_client_id=azure_client_id,
             azure_tenant_id=azure_tenant_id,
+            install_project=install_project,
         )
+        if not install_project:
+            return await ctr
+
         if not await self.test_stack(ctr):
             print(f"Initializing stack: {self.stack_name}")
             return await ctr.with_exec(["pulumi", "stack", "init", self.stack_name])
@@ -154,6 +162,60 @@ class Pulumi:
             raise RuntimeError(f"Error during Pulumi preview file generation: {e}")
 
     @function
+    async def new(
+        self,
+        storage_account_name: str,
+        container_name: str,
+        config_passphrase: dagger.Secret,
+        github_token: dagger.Secret,
+        infrastructure_path: dagger.Directory,
+        stack_name: str,
+        azure_cli_path: dagger.Directory | None,
+        azure_oidc_token: str | None,
+        azure_client_id: str | None,
+        azure_tenant_id: str | None,
+        project_name: str,
+        description: str,
+        template_name: str = "azure-python",
+        azure_location: str = "germanywestcentral",
+    ) -> dagger.Directory:
+        """Preview the changes to the infrastructure and output to a file"""
+        self.storage_account_name = storage_account_name
+        self.container_name = container_name
+        self.stack_name = stack_name
+
+        ctr = await self.create_or_select_stack(
+            config_passphrase=config_passphrase,
+            github_token=github_token,
+            infrastructure_path=infrastructure_path,
+            azure_cli_path=azure_cli_path,
+            azure_oidc_token=azure_oidc_token,
+            azure_client_id=azure_client_id,
+            azure_tenant_id=azure_tenant_id,
+            install_project=False,
+        )
+        return await ctr.with_exec(
+            [
+                "pulumi",
+                "new",
+                template_name,
+                "--name",
+                project_name,
+                "--stack",
+                stack_name,
+                "--description",
+                description,
+                "--config",
+                f"azure-native:location={azure_location}",
+                "--runtime-options",
+                "toolchain=uv,typechecker=mypy",
+                "--force",
+                "--yes",
+                "--generate-only",
+            ]
+        ).directory("/infra")
+
+    @function
     async def up(
         self,
         storage_account_name: str,
@@ -187,22 +249,28 @@ class Pulumi:
         except Exception as e:
             raise RuntimeError(f"Error during Pulumi up: {e}")
 
-    @function 
-    def build_container(self,
+    @function
+    def build_container(
+        self,
         infrastructure_path: dagger.Directory,
         github_token: dagger.Secret,
+        install_project: bool = True,
     ) -> dagger.Container:
         """Build the Pulumi container"""
         filtered_source = infrastructure_path.without_directory("venv")
-        return (
-            dag.container().from_(self.pulumi_image)
+        container = (
+            dag.container()
+            .from_(self.pulumi_image)
             .with_directory("/infra", filtered_source)
             .with_workdir("/infra")
             .with_exec(["pip", "install", "uv"])
             .with_mounted_cache(self.cache_dir, dag.cache_volume("python-313"))
             .with_secret_variable("GITHUB_TOKEN", github_token)
-            .with_exec(["pulumi", "install"])
         )
+        if install_project:
+            container = container.with_exec(["pulumi", "install"])
+
+        return container
 
     def pulumi_az_base(
         self,
@@ -213,14 +281,16 @@ class Pulumi:
         azure_oidc_token: str | None,
         azure_client_id: str | None,
         azure_tenant_id: str | None,
+        install_project: bool = True,
     ) -> dagger.Container:
         """Returns Pulumi container with Azure Authentication"""
         blob_address = f"azblob://{self.container_name}?storage_account={self.storage_account_name}"
-        ctr = self.build_container(infrastructure_path, github_token)
+        ctr = self.build_container(
+            infrastructure_path, github_token, install_project=install_project
+        )
         if azure_cli_path:
-            ctr = (
-                ctr.with_directory("/root/.azure", azure_cli_path)
-                .with_env_variable("AZURE_AUTH", "az")   
+            ctr = ctr.with_directory("/root/.azure", azure_cli_path).with_env_variable(
+                "AZURE_AUTH", "az"
             )
 
         if azure_oidc_token:
